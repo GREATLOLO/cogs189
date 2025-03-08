@@ -1,54 +1,274 @@
-import argparse
-import time
+lsl_out = False
+save_dir = f'data/misc/' # Directory to save data to
+run = 1 # Run number, it is used as the random seed for the trial sequence generation
+save_file_aux = save_dir + f'aux_run-{run}.npy'
 
-from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
+# import glob, sys, time, serial, os
+# from brainflow.board_shim import BoardShim, BrainFlowInputParams
+# from serial import Serial
+# from threading import Thread, Event
+# from queue import Queue
+# from psychopy.hardware import keyboard
+# import numpy as np
+# sampling_rate = 250
+# CYTON_BOARD_ID = 0 # 0 if no daisy 2 if use daisy board, 6 if using daisy+wifi shield
+# BAUD_RATE = 115200
+# ANALOGUE_MODE = '/2' # Reads from analog pins A5(D11), A6(D12) and if no 
+#                     # wifi shield is present, then A7(D13) as well.
+# def find_openbci_port():
+#     """Finds the port to which the Cyton Dongle is connected to."""
+#     # Find serial port names per OS
+#     if sys.platform.startswith('win'):
+#         ports = ['COM%s' % (i + 1) for i in range(256)]
+#     elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+#         ports = glob.glob('/dev/ttyUSB*')
+#     elif sys.platform.startswith('darwin'):
+#         ports = glob.glob('/dev/cu.usbserial*')
+#     else:
+#         raise EnvironmentError('Error finding ports on your operating system')
+#     openbci_port = ''
+#     for port in ports:
+#         try:
+#             s = Serial(port=port, baudrate=BAUD_RATE, timeout=None)
+#             s.write(b'v')
+#             line = ''
+#             time.sleep(2)
+#             if s.inWaiting():
+#                 line = ''
+#                 c = ''
+#                 while '$$$' not in line:
+#                     c = s.read().decode('utf-8', errors='replace')
+#                     line += c
+#                 if 'OpenBCI' in line:
+#                     openbci_port = port
+#             s.close()
+#         except (OSError, serial.SerialException):
+#             pass
+#     if openbci_port == '':
+#         raise OSError('Cannot find OpenBCI port.')
+#         exit()
+#     else:
+#         return openbci_port
+    
+# print(BoardShim.get_board_descr(CYTON_BOARD_ID))
+# params = BrainFlowInputParams()
+# if CYTON_BOARD_ID != 6:
+#     params.serial_port = find_openbci_port()
+# elif CYTON_BOARD_ID == 6:
+#     params.ip_port = 9000
+# board = BoardShim(CYTON_BOARD_ID, params)
+# board.prepare_session()
+# res_query = board.config_board('/0')
+# print(res_query)
+# res_query = board.config_board('//')
+# print(res_query)
+# res_query = board.config_board(ANALOGUE_MODE)
+# print(res_query)
+# board.start_stream(45000)
+# stop_event = Event()
+
+# def get_data(queue_in, lsl_out=False):
+#     while not stop_event.is_set():
+#         data_in = board.get_board_data()
+#         timestamp_in = data_in[board.get_timestamp_channel(CYTON_BOARD_ID)]
+#         eeg_in = data_in[board.get_eeg_channels(CYTON_BOARD_ID)]
+#         aux_in = data_in[board.get_analog_channels(CYTON_BOARD_ID)]
+#         if len(timestamp_in) > 0:
+#             print('queue-in: ', eeg_in.shape, aux_in.shape, timestamp_in.shape)
+#             queue_in.put((eeg_in, aux_in, timestamp_in))
+#         time.sleep(0.1)
+
+# queue_in = Queue()
+# cyton_thread = Thread(target=get_data, args=(queue_in, lsl_out))
+# cyton_thread.daemon = True
+# cyton_thread.start()
+
+# keyboard = keyboard.Keyboard()
+# eeg = np.zeros((8, 0))
+# aux = np.zeros((3, 0))
+# while not stop_event.is_set():
+#     time.sleep(0.1)
+#     keys = keyboard.getKeys()
+#     if 'escape' in keys:
+#         stop_event.set()
+#         break
+#     while not queue_in.empty():
+#         eeg_in, aux_in, timestamp_in = queue_in.get()
+#         print('queue-out: ', eeg_in.shape, aux_in.shape, timestamp_in.shape)
+#         eeg = np.hstack((eeg, eeg_in))
+#         aux = np.hstack((aux, aux_in))
+#         print('total: ', eeg.shape, aux.shape)
+
+# os.makedirs(save_dir, exist_ok=True)
+# np.save(save_file_aux, aux)
 
 
-def main():
-    BoardShim.enable_dev_board_logger()
-
-    parser = argparse.ArgumentParser()
-    # use docs to check which parameters are required for specific board, e.g. for Cyton - set serial port
-    parser.add_argument('--timeout', type=int, help='timeout for device discovery or connection', required=False,
-                        default=0)
-    parser.add_argument('--ip-port', type=int, help='ip port', required=False, default=0)
-    parser.add_argument('--ip-protocol', type=int, help='ip protocol, check IpProtocolType enum', required=False,
-                        default=0)
-    parser.add_argument('--ip-address', type=str, help='ip address', required=False, default='')
-    parser.add_argument('--serial-port', type=str, help='serial port', required=False, default='')
-    parser.add_argument('--mac-address', type=str, help='mac address', required=False, default='')
-    parser.add_argument('--other-info', type=str, help='other info', required=False, default='')
-    parser.add_argument('--serial-number', type=str, help='serial number', required=False, default='')
-    parser.add_argument('--board-id', type=int, help='board id, check docs to get a list of supported boards',
-                        required=True)
-    parser.add_argument('--file', type=str, help='file', required=False, default='')
-    parser.add_argument('--master-board', type=int, help='master board id for streaming and playback boards',
-                        required=False, default=BoardIds.NO_BOARD)
-    args = parser.parse_args()
-
-    params = BrainFlowInputParams()
-    params.ip_port = args.ip_port
-    params.serial_port = args.serial_port
-    params.mac_address = args.mac_address
-    params.other_info = args.other_info
-    params.serial_number = args.serial_number
-    params.ip_address = args.ip_address
-    params.ip_protocol = args.ip_protocol
-    params.timeout = args.timeout
-    params.file = args.file
-    params.master_board = args.master_board
-
-    board = BoardShim(args.board_id, params)
-    board.prepare_session()
-    board.start_stream ()
-    time.sleep(10)
-    # data = board.get_current_board_data (256) # get latest 256 packages or less, doesnt remove them from internal buffer
-    data = board.get_board_data()  # get all data and remove it from internal buffer
-    board.stop_stream()
-    board.release_session()
-
-    print(data)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import glob, sys, time, serial, os, json, asyncio, websockets
+from brainflow.board_shim import BoardShim, BrainFlowInputParams
+from serial import Serial
+from threading import Thread, Event
+from queue import Queue
+import numpy as np
+
+# WebSocket Port
+WEBSOCKET_PORT = 8080
+
+sampling_rate = 250
+CYTON_BOARD_ID = 0  # Change based on your device
+BAUD_RATE = 115200
+ANALOGUE_MODE = "/2"
+
+def find_openbci_port():
+    """Find the OpenBCI Cyton Dongle's port."""
+    if sys.platform.startswith("win"):
+        ports = ["COM%s" % (i + 1) for i in range(256)]
+    elif sys.platform.startswith("linux") or sys.platform.startswith("cygwin"):
+        ports = glob.glob("/dev/ttyUSB*")
+    elif sys.platform.startswith("darwin"):
+        ports = glob.glob("/dev/cu.usbserial*")
+    else:
+        raise EnvironmentError("Error finding ports on your OS")
+
+    openbci_port = ""
+    for port in ports:
+        try:
+            s = Serial(port=port, baudrate=BAUD_RATE, timeout=None)
+            s.write(b"v")
+            time.sleep(2)
+            if s.inWaiting():
+                line = s.read(s.inWaiting()).decode("utf-8", errors="replace")
+                if "OpenBCI" in line:
+                    openbci_port = port
+            s.close()
+        except (OSError, serial.SerialException):
+            pass
+    if openbci_port == "":
+        raise OSError("Cannot find OpenBCI port.")
+    return openbci_port
+
+# Initialize OpenBCI
+params = BrainFlowInputParams()
+params.serial_port = find_openbci_port()
+board = BoardShim(CYTON_BOARD_ID, params)
+
+board.prepare_session()
+board.config_board(ANALOGUE_MODE)
+board.start_stream(45000)
+
+stop_event = Event()
+queue_in = Queue()
+
+# **Blink Detection Function**
+def detect_blink(eeg_data):
+    """Detect blinks based on EEG signal threshold."""
+    THRESHOLD = 100  # Adjust based on calibration
+    return np.any(np.abs(eeg_data) > THRESHOLD)
+
+# **Data Collection Function**
+def get_data(queue_in):
+    while not stop_event.is_set():
+        data_in = board.get_board_data()
+        eeg_in = data_in[board.get_eeg_channels(CYTON_BOARD_ID)]
+        if eeg_in.shape[1] > 0:
+            blink_detected = detect_blink(eeg_in)
+            queue_in.put(blink_detected)
+        time.sleep(0.1)
+
+# **WebSocket Server**
+async def eeg_websocket(websocket, path):
+    print("🟢 WebSocket Client Connected")
+    while not stop_event.is_set():
+        while not queue_in.empty():
+            blink_status = queue_in.get()
+            msg = json.dumps({"blink": blink_status})
+            await websocket.send(msg)
+            print(f"🔵 Sent to WebSocket: {msg}")
+        await asyncio.sleep(0.1)
+
+async def start_server():
+    """Start WebSocket server with proper event loop handling."""
+    server = await websockets.serve(eeg_websocket, "localhost", WEBSOCKET_PORT)
+    print(f"🟢 WebSocket Server running on ws://localhost:{WEBSOCKET_PORT}")
+    await server.wait_closed()
+
+# **Fix: Ensure the event loop runs correctly**
 if __name__ == "__main__":
-    main()
+    cyton_thread = Thread(target=get_data, args=(queue_in,))
+    cyton_thread.daemon = True
+    cyton_thread.start()
+
+    try:
+        asyncio.run(start_server())  # This ensures the event loop runs properly
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(start_server())
