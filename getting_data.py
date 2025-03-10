@@ -10,7 +10,7 @@ from threading import Thread, Event
 from queue import Queue
 from psychopy.hardware import keyboard
 import numpy as np
-sampling_rate = 30
+sampling_rate = 250
 CYTON_BOARD_ID = 0 # 0 if no daisy 2 if use daisy board, 6 if using daisy+wifi shield
 BAUD_RATE = 115200
 ANALOGUE_MODE = '/2' # Reads from analog pins A5(D11), A6(D12) and if no 
