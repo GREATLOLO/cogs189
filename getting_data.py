@@ -100,7 +100,7 @@ while not stop_event.is_set():
         print('total: ', eeg.shape, aux.shape)
 
 os.makedirs(save_dir, exist_ok=True)
-np.save(save_file_aux, aux, eeg)
+np.save(save_file_aux, eeg)
 
 
 
