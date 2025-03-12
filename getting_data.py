@@ -118,7 +118,7 @@ def lowpass_filter(data, lowcut, fs, order=4):
     return filtfilt(b, a, data)  # Zero-phase filtering
 
 queue_in = Queue()
-cyton_thread = Thread(target=get_data, args=(queue_in, lsl_out))
+cyton_thread = Thread(target=get_data, args=(queue_in, lsl_out)) 
 cyton_thread.daemon = True
 cyton_thread.start()
 
