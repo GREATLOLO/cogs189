@@ -9,7 +9,10 @@ from serial import Serial
 from threading import Thread, Event
 from queue import Queue
 from psychopy.hardware import keyboard
+from scipy.signal import butter, filtfilt
 import numpy as np
+
+lowcut = 30  # Cutoff frequency (Hz)
 sampling_rate = 250
 CYTON_BOARD_ID = 0 # 0 if no daisy 2 if use daisy board, 6 if using daisy+wifi shield
 BAUD_RATE = 115200
@@ -77,6 +80,24 @@ def get_data(queue_in, lsl_out=False):
             print('queue-in: ', eeg_in.shape, aux_in.shape, timestamp_in.shape)
             queue_in.put((eeg_in, aux_in, timestamp_in))
         time.sleep(0.1)
+
+def highpass_filter(data, lowcut, fs, order=4):
+    """
+    Applies a high-pass Butterworth filter to EEG data.
+
+    Parameters:
+        data (array): EEG signal.
+        lowcut (float): Cutoff frequency (Hz).
+        fs (int): Sampling frequency (Hz).
+        order (int): Order of the filter (higher = sharper).
+
+    Returns:
+        array: High-pass filtered EEG signal.
+    """
+    nyquist = 0.5 * fs
+    low = lowcut / nyquist  # Normalize frequency
+    b, a = butter(order, low, btype='highpass')
+    return filtfilt(b, a, data)  # Zero-phase filtering
 
 queue_in = Queue()
 cyton_thread = Thread(target=get_data, args=(queue_in, lsl_out))
