@@ -99,6 +99,24 @@ def highpass_filter(data, lowcut, fs, order=4):
     b, a = butter(order, low, btype='highpass')
     return filtfilt(b, a, data)  # Zero-phase filtering
 
+def lowpass_filter(data, lowcut, fs, order=4):
+    """
+    Applies a high-pass Butterworth filter to EEG data.
+
+    Parameters:
+        data (array): EEG signal.
+        lowcut (float): Cutoff frequency (Hz).
+        fs (int): Sampling frequency (Hz).
+        order (int): Order of the filter (higher = sharper).
+
+    Returns:
+        array: High-pass filtered EEG signal.
+    """
+    nyquist = 0.5 * fs
+    low = lowcut / nyquist  # Normalize frequency
+    b, a = butter(order, low, btype='lowpass')
+    return filtfilt(b, a, data)  # Zero-phase filtering
+
 queue_in = Queue()
 cyton_thread = Thread(target=get_data, args=(queue_in, lsl_out))
 cyton_thread.daemon = True
@@ -117,6 +135,7 @@ while not stop_event.is_set():
         eeg_in, aux_in, timestamp_in = queue_in.get()
         print('queue-out: ', eeg_in.shape, aux_in.shape, timestamp_in.shape)
         eeg_in_filtered = highpass_filter(eeg_in, lowcut, sampling_rate)
+        eeg_in_filtered = lowpass_filter(eeg_in, lowcut, sampling_rate)
         eeg = np.hstack((eeg, eeg_in_filtered))
         aux = np.hstack((aux, aux_in))
         print('total: ', eeg.shape, aux.shape)
