@@ -116,7 +116,8 @@ while not stop_event.is_set():
     while not queue_in.empty():
         eeg_in, aux_in, timestamp_in = queue_in.get()
         print('queue-out: ', eeg_in.shape, aux_in.shape, timestamp_in.shape)
-        eeg = np.hstack((eeg, eeg_in))
+        eeg_in_filtered = highpass_filter(eeg_in, lowcut, sampling_rate)
+        eeg = np.hstack((eeg, eeg_in_filtered))
         aux = np.hstack((aux, aux_in))
         print('total: ', eeg.shape, aux.shape)
 
